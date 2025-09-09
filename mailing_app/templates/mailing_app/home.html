@@ -1,0 +1,27 @@
+{% load cache %}
+{% extends 'mailing_app/base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Статистика сервиса</h1>
+
+{% cache 300 global_stats user.id %}
+<ul class="list-group mb-4">
+  <li class="list-group-item">Всего рассылок: {{ total_mailings }}</li>
+  <li class="list-group-item">Активных рассылок: {{ active_mailings }}</li>
+  <li class="list-group-item">Уникальных клиентов: {{ unique_clients }}</li>
+</ul>
+{% endcache %}
+
+{% if user.is_authenticated %}
+  {% cache 300 user_stats user.id %}
+  <h2>Ваша статистика</h2>
+  <ul class="list-group">
+    <li class="list-group-item">Всего отправлено сообщений: {{ total_messages_sent }}</li>
+    <li class="list-group-item">Успешных попыток: {{ successful_attempts }}</li>
+    <li class="list-group-item">Неуспешных попыток: {{ failed_attempts }}</li>
+  </ul>
+  {% endcache %}
+{% endif %}
+{% endblock %}
