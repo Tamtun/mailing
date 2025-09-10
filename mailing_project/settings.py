@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "mailing_app",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -141,7 +142,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'home'
 
-AUTH_USER_MODEL = 'mailing_app.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 CACHE_ENABLED = True
 

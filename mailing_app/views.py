@@ -4,10 +4,11 @@ from django.views.decorators.cache import cache_page
 from django.http import HttpResponseForbidden
 from django.core.mail import send_mail
 from django.contrib import messages
-from django.contrib.auth import login
+from users.models import CustomUser
 from django.db.models import Count
-from .models import Client, Message, Mailing, Attempt, CustomUser
-from .forms import ClientForm, MessageForm, MailingForm, UserRegisterForm
+from .models import Client, Message, Mailing, Attempt
+from .forms import ClientForm, MessageForm, MailingForm
+
 
 @cache_page(60 * 5)
 @login_required
@@ -195,10 +196,3 @@ def block_user(request, pk):
     user.save()
     return redirect('user_list')
 
-def signup_view(request):
-    form = UserRegisterForm(request.POST or None)
-    if form.is_valid():
-        user = form.save()
-        login(request, user)
-        return redirect('home')
-    return render(request, 'mailing_app/signup.html', {'form': form})

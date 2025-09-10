@@ -17,7 +17,7 @@ urlpatterns = [
     path('mailings/<int:pk>/edit/', views.mailing_update, name='mailing_update'),
     path('mailings/<int:pk>/delete/', views.mailing_delete, name='mailing_delete'),
     path('mailings/<int:pk>/send/', views.mailing_send, name='mailing_send'),
-    path('signup/', views.signup_view, name='signup'),
+    #path('signup/', views.signup_view, name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='mailing_app/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     path('password_reset/', auth_views.PasswordResetView.as_view(template_name='mailing_app/password_reset.html'), name='password_reset'),
