@@ -1,7 +1,25 @@
-<h1>Вход</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Войти</button>
-</form>
-<p>Нет аккаунта? <a href="{% url 'signup' %}">Зарегистрироваться</a></p>
+{% extends 'mailing_app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Вход</h2>
+
+  <form method="post" class="card p-4 shadow-sm">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="mb-3">
+      {{ form.username.label_tag }}
+      {{ form.username }}
+      {{ form.username.errors }}
+    </div>
+    <div class="mb-3">
+      {{ form.password.label_tag }}
+      {{ form.password }}
+      {{ form.password.errors }}
+    </div>
+    <button type="submit" class="btn btn-primary">Войти</button>
+  </form>
+
+  <p class="mt-3">Нет аккаунта? <a href="{% url 'signup' %}">Зарегистрироваться</a></p>
+</div>
+{% endblock %}

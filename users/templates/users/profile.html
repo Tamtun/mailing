@@ -1,0 +1,12 @@
+{% extends 'mailing_app/base.html' %}
+
+{% block content %}
+<h2>Профиль пользователя</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+  <li class="list-group-item"><strong>Имя пользователя:</strong> {{ user.username }}</li>
+  <li class="list-group-item"><strong>Телефон:</strong> {{ user.phone_number }}</li>
+  <li class="list-group-item"><strong>Страна:</strong> {{ user.country }}</li>
+</ul>
+<a href="{% url 'profile_edit' %}" class="btn btn-secondary mt-3">Редактировать</a>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'mailing_app/base.html' %}
+
+{% block title %}Отчёты по рассылкам{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Отчёты по рассылкам</h2>
+
+{% if user.is_authenticated %}
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Тема сообщения</th>
+        <th>Всего попыток</th>
+        <th>Успешно</th>
+        <th>Не успешно</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in report %}
+      <tr>
+        <td>{{ item.mailing.message.subject }}</td>
+        <td>{{ item.total }}</td>
+        <td>{{ item.success }}</td>
+        <td>{{ item.fail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="alert alert-warning">Для просмотра отчётов необходимо войти в систему.</div>
+{% endif %}
+{% endblock %}

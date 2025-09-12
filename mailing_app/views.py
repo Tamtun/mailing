@@ -4,14 +4,17 @@ from django.views.decorators.cache import cache_page
 from django.http import HttpResponseForbidden
 from django.core.mail import send_mail
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 from users.models import CustomUser
 from django.db.models import Count
 from .models import Client, Message, Mailing, Attempt
 from .forms import ClientForm, MessageForm, MailingForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 
-
-@cache_page(60 * 5)
 @login_required
+@cache_page(60 * 5)
 def home_view(request):
     user_mailings = Mailing.objects.filter(owner=request.user)
     user_attempts = Attempt.objects.filter(mailing__in=user_mailings)
@@ -23,122 +26,138 @@ def home_view(request):
     }
     return render(request, 'mailing_app/home.html', context)
 
-@cache_page(60 * 3)
-@login_required
-def client_list(request):
-    if request.user.role == 'manager':
-        clients = Client.objects.all()
-    else:
-        clients = Client.objects.filter(mailing__owner=request.user).distinct()
-    return render(request, 'mailing_app/client_list.html', {'clients': clients})
+class ClientListView(ListView):
+    model = Client
+    template_name = 'mailing_app/client_list.html'
 
-@login_required
-def client_create(request):
-    form = ClientForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect('client_list')
-    return render(request, 'mailing_app/client_form.html', {'form': form})
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            return Client.objects.all()
+        return Client.objects.filter(mailing__owner=user).distinct()
 
-@login_required
-def client_update(request, pk):
-    client = get_object_or_404(Client, pk=pk)
-    if request.user.role != 'manager' and not Mailing.objects.filter(clients=client, owner=request.user).exists():
-        return HttpResponseForbidden("Нет доступа")
-    form = ClientForm(request.POST or None, instance=client)
-    if form.is_valid():
-        form.save()
-        return redirect('client_list')
-    return render(request, 'mailing_app/client_form.html', {'form': form})
+class ClientCreateView(CreateView):
+    model = Client
+    form_class = ClientForm
+    template_name = 'mailing_app/client_form.html'
+    success_url = reverse_lazy('client_list')
 
-@login_required
-def client_delete(request, pk):
-    client = get_object_or_404(Client, pk=pk)
-    if request.user.role != 'manager' and not Mailing.objects.filter(clients=client, owner=request.user).exists():
-        return HttpResponseForbidden("Нет доступа")
-    if request.method == 'POST':
-        client.delete()
-        return redirect('client_list')
-    return render(request, 'mailing_app/client_confirm_delete.html', {'client': client})
+class ClientUpdateView(UpdateView):
+    model = Client
+    form_class = ClientForm
+    template_name = 'mailing_app/client_form.html'
+    success_url = reverse_lazy('client_list')
 
-@cache_page(60 * 3)
-@login_required
-def message_list(request):
-    if request.user.role == 'manager':
-        messages_qs = Message.objects.all()
-    else:
-        messages_qs = Message.objects.filter(mailing__owner=request.user).distinct()
-    return render(request, 'mailing_app/message_list.html', {'messages': messages_qs})
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if user.role != 'manager' and not Mailing.objects.filter(clients=obj, owner=user).exists():
+            raise PermissionDenied("Нет доступа")
+        return obj
 
-@login_required
-def message_create(request):
-    form = MessageForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect('message_list')
-    return render(request, 'mailing_app/message_form.html', {'form': form})
+class ClientDeleteView(DeleteView):
+    model = Client
+    template_name = 'mailing_app/client_confirm_delete.html'
+    success_url = reverse_lazy('client_list')
 
-@login_required
-def message_update(request, pk):
-    message = get_object_or_404(Message, pk=pk)
-    if request.user.role != 'manager' and not Mailing.objects.filter(message=message, owner=request.user).exists():
-        return HttpResponseForbidden("Нет доступа")
-    form = MessageForm(request.POST or None, instance=message)
-    if form.is_valid():
-        form.save()
-        return redirect('message_list')
-    return render(request, 'mailing_app/message_form.html', {'form': form})
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if user.role != 'manager' and not Mailing.objects.filter(clients=obj, owner=user).exists():
+            raise PermissionDenied("Нет доступа")
+        return obj
 
-@login_required
-def message_delete(request, pk):
-    message = get_object_or_404(Message, pk=pk)
-    if request.user.role != 'manager' and not Mailing.objects.filter(message=message, owner=request.user).exists():
-        return HttpResponseForbidden("Нет доступа")
-    if request.method == 'POST':
-        message.delete()
-        return redirect('message_list')
-    return render(request, 'mailing_app/message_confirm_delete.html', {'message': message})
+class MessageListView(ListView):
+    model = Message
+    template_name = 'mailing_app/message_list.html'
 
-@cache_page(60 * 3)
-@login_required
-def mailing_list(request):
-    if request.user.role == 'manager':
-        mailings = Mailing.objects.all()
-    else:
-        mailings = Mailing.objects.filter(owner=request.user)
-    return render(request, 'mailing_app/mailing_list.html', {'mailings': mailings})
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            return Message.objects.all()
+        return Message.objects.filter(owner=user)
 
-@login_required
-def mailing_create(request):
-    form = MailingForm(request.POST or None)
-    if form.is_valid():
-        mailing = form.save(commit=False)
-        mailing.owner = request.user
-        mailing.save()
+class MessageCreateView(CreateView):
+    model = Message
+    form_class = MessageForm
+    template_name = 'mailing_app/message_form.html'
+    success_url = reverse_lazy('message_list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+class MessageUpdateView(UpdateView):
+    model = Message
+    form_class = MessageForm
+    template_name = 'mailing_app/message_form.html'
+    success_url = reverse_lazy('message_list')
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if user.role != 'manager' and obj.owner != user:
+            raise PermissionDenied("Нет доступа")
+        return obj
+
+class MessageDeleteView(DeleteView):
+    model = Message
+    template_name = 'mailing_app/message_confirm_delete.html'
+    success_url = reverse_lazy('message_list')
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if user.role != 'manager' and obj.owner != user:
+            raise PermissionDenied("Нет доступа")
+        return obj
+
+class MailingListView(ListView):
+    model = Mailing
+    template_name = 'mailing_app/mailing_list.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            return Mailing.objects.all()
+        return Mailing.objects.filter(owner=user)
+
+class MailingCreateView(CreateView):
+    model = Mailing
+    form_class = MailingForm
+    template_name = 'mailing_app/mailing_form.html'
+    success_url = reverse_lazy('mailing_list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        response = super().form_valid(form)
         form.save_m2m()
-        return redirect('mailing_list')
-    return render(request, 'mailing_app/mailing_form.html', {'form': form})
+        return response
 
-@login_required
-def mailing_update(request, pk):
-    mailing = get_object_or_404(Mailing, pk=pk)
-    if mailing.owner != request.user and request.user.role != 'manager':
-        return HttpResponseForbidden("Нет доступа")
-    form = MailingForm(request.POST or None, instance=mailing)
-    if form.is_valid():
-        form.save()
-        return redirect('mailing_list')
-    return render(request, 'mailing_app/mailing_form.html', {'form': form})
+class MailingUpdateView(UpdateView):
+    model = Mailing
+    form_class = MailingForm
+    template_name = 'mailing_app/mailing_form.html'
+    success_url = reverse_lazy('mailing_list')
 
-@login_required
-def mailing_delete(request, pk):
-    mailing = get_object_or_404(Mailing, pk=pk)
-    if mailing.owner != request.user and request.user.role != 'manager':
-        return HttpResponseForbidden("Нет доступа")
-    if request.method == 'POST':
-        mailing.delete()
-        return redirect('mailing_list')
-    return render(request, 'mailing_app/mailing_confirm_delete.html', {'mailing': mailing})
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if obj.owner != user and user.role != 'manager':
+            raise PermissionDenied("Нет доступа")
+        return obj
+
+class MailingDeleteView(DeleteView):
+    model = Mailing
+    template_name = 'mailing_app/mailing_confirm_delete.html'
+    success_url = reverse_lazy('mailing_list')
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        user = self.request.user
+        if obj.owner != user and user.role != 'manager':
+            raise PermissionDenied("Нет доступа")
+        return obj
 
 @login_required
 def mailing_send(request, pk):
@@ -196,3 +215,36 @@ def block_user(request, pk):
     user.save()
     return redirect('user_list')
 
+class AttemptListView(LoginRequiredMixin, ListView):
+    model = Attempt
+    template_name = 'mailing_app/attempt_list.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            return Attempt.objects.all()
+        return Attempt.objects.filter(mailing__owner=user)
+
+class MailingReportView(LoginRequiredMixin, ListView):
+    model = Mailing
+    template_name = 'mailing_app/mailing_report.html'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'manager':
+            return Mailing.objects.all()
+        return Mailing.objects.filter(owner=user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        report = []
+        for mailing in context['object_list']:
+            attempts = Attempt.objects.filter(mailing=mailing)
+            report.append({
+                'mailing': mailing,
+                'total': attempts.count(),
+                'success': attempts.filter(status='Успешно').count(),
+                'fail': attempts.filter(status='Не успешно').count(),
+            })
+        context['report'] = report
+        return context

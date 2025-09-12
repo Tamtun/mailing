@@ -27,17 +27,22 @@
     <a class="navbar-brand" href="{% url 'home' %}">Рассылки</a>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="{% url 'client_list' %}">Клиенты</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'message_list' %}">Сообщения</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'mailing_list' %}">Рассылки</a></li>
+        {% if user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'client_list' %}">Клиенты</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'message_list' %}">Сообщения</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'mailing_list' %}">Рассылки</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'attempt_list' %}">Попытки рассылок</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'mailing_report' %}">Отчёты</a></li>
+        {% endif %}
       </ul>
       <ul class="navbar-nav ms-auto">
         {% if user.is_authenticated %}
-          <li class="nav-item"><span class="nav-link">Привет, {{ user.username }}</span></li>
+          <li class="nav-item"><span class="nav-link">Привет, {{ user.email }}</span></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Профиль</a></li>
           <li class="nav-item">
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
-              <button class="btn btn-outline-light btn-sm" type="submit">Выйти</button>
+              <button type="submit" class="btn btn-outline-light btn-sm">Выйти</button>
             </form>
           </li>
         {% else %}

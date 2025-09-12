@@ -140,7 +140,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 LOGIN_URL = 'login'
-LOGOUT_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
@@ -153,3 +153,6 @@ if CACHE_ENABLED:
             "LOCATION": os.getenv("REDIS_URL"),
         }
     }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
