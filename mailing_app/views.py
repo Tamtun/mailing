@@ -36,11 +36,16 @@ class ClientListView(ListView):
             return Client.objects.all()
         return Client.objects.filter(mailing__owner=user).distinct()
 
-class ClientCreateView(CreateView):
+class ClientCreateView(LoginRequiredMixin, CreateView):
     model = Client
     form_class = ClientForm
     template_name = 'mailing_app/client_form.html'
     success_url = reverse_lazy('client_list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
 
 class ClientUpdateView(UpdateView):
     model = Client
