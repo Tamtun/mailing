@@ -1,0 +1,11 @@
+{% extends 'mailing_app/base.html' %}
+
+{% block content %}
+<h2>Редактировать профиль</h2>
+<form method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">Сохранить</button>
+</form>
+<a href="{% url 'profile' %}" class="btn btn-secondary mt-3">Назад к профилю</a>
+{% endblock %}
